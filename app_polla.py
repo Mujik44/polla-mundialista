@@ -23,13 +23,29 @@ def cargar_datos():
     gc = gspread.service_account_from_dict(credentials)
     sh = gc.open("POLLA MUNDIAL 2026")
     
-    # Obtener resultados reales
-    df_gen = pd.DataFrame(sh.worksheet("GENERAL").get_all_records())
+    # Definimos las columnas que esperamos para evitar el error de encabezados duplicados
+    columnas_esperadas = ['Casa', 'Gol Casa', 'Gol Fuera', 'Fuera']
     
-    # Obtener nombres de hojas (participantes)
-    hojas = [ws.title for ws in sh.worksheets() if ws.title != 'GENERAL']
+    # Cargar Hoja GENERAL
+    ws_gen = sh.worksheet("GENERAL")
+    # Usamos 'get_all_records' pero asegurándonos de limpiar el DataFrame inmediatamente
+    df_gen = pd.DataFrame(ws_gen.get_all_records())
+    # Filtramos columnas vacías por si acaso
+    df_gen = df_gen.loc[:, ~df_gen.columns.str.contains('^Unnamed')]
+
+    # Cargar Hojas de Participantes
+    participantes = ['ANGEL', 'RAI', 'JEFRY', 'JOSE MIGUEL', 'DIEGO', 'PITUS']
+    dict_participantes = {}
     
-    return df_gen, {nombre: pd.DataFrame(sh.worksheet(nombre).get_all_records()) for nombre in hojas}
+    for p in participantes:
+        try:
+            ws_p = sh.worksheet(p)
+            df_p = pd.DataFrame(ws_p.get_all_records())
+            dict_participantes[p] = df_p.loc[:, ~df_p.columns.str.contains('^Unnamed')]
+        except:
+            continue
+            
+    return df_gen, dict_participantes
 
 try:
     df_general, dict_participantes = cargar_datos()
