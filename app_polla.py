@@ -91,6 +91,10 @@ try:
     
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
+except Exception as e:
+    st.error(f"Error al cargar datos: {e}")
+    st.write("Asegúrate de que el nombre del archivo en Google Drive sea exactamente 'POLLA MUNDIAL 2026' y que las hojas tengan los encabezados correctos.")
+
 # --- FILTRO DE BÚSQUEDA ---
 st.subheader("🔍 Detalle por Partido")
 
@@ -128,7 +132,3 @@ if partido_seleccionado:
     # 3. Mostrar tabla de detalle
     df_detalle = pd.DataFrame(detalle_data)
     st.table(df_detalle)
-
-except Exception as e:
-    st.error(f"Error al cargar datos: {e}")
-    st.write("Asegúrate de que el nombre del archivo en Google Drive sea exactamente 'POLLA MUNDIAL 2026' y que las hojas tengan los encabezados correctos.")
