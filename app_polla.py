@@ -91,6 +91,44 @@ try:
     
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
+# --- FILTRO DE BÚSQUEDA ---
+st.subheader("🔍 Detalle por Partido")
+
+# Creamos una lista de partidos basada en los partidos de la hoja GENERAL
+lista_partidos = [f"{row['Casa']} vs {row['Fuera']}" for _, row in df_general.iterrows()]
+partido_seleccionado = st.selectbox("Selecciona un partido para ver el detalle:", lista_partidos)
+
+if partido_seleccionado:
+    casa_sel, fuera_sel = partido_seleccionado.split(" vs ")
+    
+    # 1. Obtener resultado real (si existe)
+    match_real = df_general[(df_general['Casa'] == casa_sel) & (df_general['Fuera'] == fuera_sel)].iloc[0]
+    res_real = (match_real['Gol Casa'], match_real['Gol Fuera'])
+    
+    st.write(f"**Resultado Real:** {res_real[0]} - {res_real[1]}")
+    
+    # 2. Comparar predicciones de todos los participantes
+    detalle_data = []
+    for nombre, df_p in dict_participantes.items():
+        pred = df_p[(df_p['Casa'] == casa_sel) & (df_p['Fuera'] == fuera_sel)]
+        if not pred.empty:
+            p_gc, p_gf = pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera']
+            
+            # Calcular puntos si el partido ya se jugó
+            puntos = 0
+            if pd.notna(res_real[0]) and pd.notna(res_real[1]):
+                puntos = calcular_puntos(p_gc, p_gf, res_real[0], res_real[1])
+            
+            detalle_data.append({
+                'Participante': nombre,
+                'Predicción': f"{p_gc} - {p_gf}",
+                'Puntos Ganados': puntos
+            })
+    
+    # 3. Mostrar tabla de detalle
+    df_detalle = pd.DataFrame(detalle_data)
+    st.table(df_detalle)
+
 except Exception as e:
     st.error(f"Error al cargar datos: {e}")
     st.write("Asegúrate de que el nombre del archivo en Google Drive sea exactamente 'POLLA MUNDIAL 2026' y que las hojas tengan los encabezados correctos.")
