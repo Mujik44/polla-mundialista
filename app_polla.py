@@ -8,13 +8,27 @@ st.title("🏆 Polla Mundialista 2026 - Dashboard en Vivo")
 
 # Función para calcular puntos según tus reglas
 def calcular_puntos(pred_gc, pred_gf, real_gc, real_gf):
-    if pd.isna(pred_gc) or pd.isna(pred_gf) or pd.isna(real_gc) or pd.isna(real_gf):
+    # Convertimos a string y quitamos espacios antes de verificar si están vacíos
+    pred_gc, pred_gf = str(pred_gc).strip(), str(pred_gf).strip()
+    real_gc, real_gf = str(real_gc).strip(), str(real_gf).strip()
+    
+    # Si alguna celda está vacía, no calculamos puntos (partido pendiente o dato faltante)
+    if not pred_gc or not pred_gf or not real_gc or not real_gf:
         return 0
-    if (int(pred_gc) == int(real_gc)) and (int(pred_gf) == int(real_gf)):
-        return 2
-    real_res = 1 if int(real_gc) > int(real_gf) else (-1 if int(real_gc) < int(real_gf) else 0)
-    pred_res = 1 if int(pred_gc) > int(pred_gf) else (-1 if int(pred_gc) < int(pred_gf) else 0)
-    return 1 if real_res == pred_res else 0
+    
+    # Intentamos convertir a entero solo si tenemos valores válidos
+    try:
+        p_gc, p_gf = int(pred_gc), int(pred_gf)
+        r_gc, r_gf = int(real_gc), int(real_gf)
+        
+        if (p_gc == r_gc) and (p_gf == r_gf):
+            return 2
+        real_res = 1 if r_gc > r_gf else (-1 if r_gc < r_gf else 0)
+        pred_res = 1 if p_gc > p_gf else (-1 if p_gc < p_gf else 0)
+        return 1 if real_res == pred_res else 0
+    except ValueError:
+        # Si hay algo que no es un número (como una letra), devolvemos 0
+        return 0
 
 # Cargar datos desde Google Sheets
 @st.cache_data(ttl=600)
