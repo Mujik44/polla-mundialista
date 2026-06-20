@@ -74,14 +74,32 @@ try:
     st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
+    # --- HISTORIAL OPCIONAL (Calendario Moderno) ---
     with st.expander("📅 ¿Quieres ver cómo estaba la tabla en una fecha anterior?"):
         if 'Fecha' in df_general.columns:
+            # Convertir a formato fecha
             df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True)
-            fechas_disponibles = sorted([f for f in df_general['Fecha'].unique() if f >= pd.Timestamp('2026-06-11')])
             
-            if fechas_disponibles:
-                fecha_sel = st.select_slider("Selecciona la fecha del histórico:", options=fechas_disponibles, format_func=lambda x: x.strftime('%d/%m/%Y'))
-                df_hist = df_general[df_general['Fecha'] <= fecha_sel]
+            # Filtramos fechas válidas a partir del 11 de junio
+            min_fecha = pd.Timestamp('2026-06-11')
+            max_fecha = df_general['Fecha'].max()
+            
+            # Calendario de selección simple
+            fecha_sel = st.date_input(
+                "Selecciona la fecha:",
+                value=max_fecha,
+                min_value=min_fecha,
+                max_value=max_fecha
+            )
+
+            # Convertimos fecha_sel a timestamp para comparar con los datos
+            fecha_sel = pd.Timestamp(fecha_sel)
+
+            # Recalcular tabla histórica
+            df_hist = df_general[df_general['Fecha'] <= fecha_sel]
+            
+            # Verificamos si hay partidos en esa fecha
+            if not df_hist.empty:
                 hist_data = []
                 for nombre, df_p in dict_participantes.items():
                     pts = 0
@@ -96,7 +114,7 @@ try:
                 df_tabla_hist.index += 1
                 st.table(df_tabla_hist)
             else:
-                st.write("No hay datos disponibles a partir del 11 de junio.")
+                st.write("No hay partidos registrados hasta esa fecha.")
         else:
             st.warning("La columna 'Fecha' no está configurada en la hoja GENERAL.")
 
