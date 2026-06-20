@@ -121,63 +121,51 @@ try:
     st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
-    # --- DASHBOARD DE JORNADA HISTÓRICA ---
-    with st.expander("📅 Ver estado de la Polla en una fecha específica"):
+    # --- DASHBOARD DE JORNADA (SOLO EL DÍA SELECCIONADO) ---
+    with st.expander("📅 Ver resumen de una jornada específica"):
         if 'Fecha' in df_general.columns:
-            # 1. Aseguramos formato correcto (día/mes/año) convirtiendo a datetime
+            # 1. Configuración de fechas y formato
             df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True, errors='coerce')
-            
-            # 2. Definimos límites estrictos del calendario (11 al 27 de junio de 2026)
             inicio_rango = pd.Timestamp(2026, 6, 11).date()
             fin_rango = pd.Timestamp(2026, 6, 27).date()
             
-            # 3. Calendario con restricciones de rango
-            fecha_sel = st.date_input(
-                "Selecciona el día de la jornada:",
-                value=min(max(pd.Timestamp.now().date(), inicio_rango), fin_rango),
-                min_value=inicio_rango,
-                max_value=fin_rango
-            )
+            fecha_sel = st.date_input("Selecciona el día:", value=min(max(pd.Timestamp.now().date(), inicio_rango), fin_rango), 
+                                      min_value=inicio_rango, max_value=fin_rango)
             
-            fecha_sel = pd.Timestamp(fecha_sel) # Convertimos a Timestamp para comparar
-
-            # 1. Tabla acumulada al final de ese día
-            df_hist = df_general[df_general['Fecha'] <= fecha_sel]
-            
-            # Cálculo de tabla acumulada
-            hist_data = []
-            for nombre, df_p in dict_participantes.items():
-                pts = 0
-                for _, row in df_p.iterrows():
-                    casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-                    partido = df_hist[(df_hist['Casa'] == casa) & (df_hist['Fuera'] == fuera)]
-                    if not partido.empty and pd.notna(partido.iloc[0]['Gol Casa']):
-                        pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], partido.iloc[0]['Gol Casa'], partido.iloc[0]['Gol Fuera'])
-                hist_data.append({'Participante': nombre, 'Puntos': pts})
-            
-            df_tabla_hist = pd.DataFrame(hist_data).sort_values(by='Puntos', ascending=False).reset_index(drop=True)
-            
-            st.subheader(f"📊 Tabla al {fecha_sel.strftime('%d/%m/%Y')}")
-            st.table(df_tabla_hist)
-
-            # 2. Resultados de los partidos de ese día exacto
-            st.subheader(f"⚽ Partidos jugados el {fecha_sel.strftime('%d/%m/%Y')}")
-            partidos_dia = df_general[df_general['Fecha'] == fecha_sel]
+            # 2. Filtrar partidos del día
+            partidos_dia = df_general[df_general['Fecha'].dt.date == fecha_sel]
             
             if not partidos_dia.empty:
-                for _, p in partidos_dia.iterrows():
-                    st.write(f"**{p['Casa']} vs {p['Fuera']}**: {p['Gol Casa']} - {p['Gol Fuera']}")
+                st.subheader(f"⚽ Resultados y Predicciones: {fecha_sel.strftime('%d/%m/%Y')}")
                 
-                # 3. Gráfico comparativo de Puntos Totales (Plotly)
+                # Preparar datos de puntos del día
+                puntos_dia_data = []
+                
+                for _, partido in partidos_dia.iterrows():
+                    st.markdown(f"**{partido['Casa']} vs {partido['Fuera']}** | Resultado Real: {partido['Gol Casa']} - {partido['Gol Fuera']}")
+                    
+                    # Mostrar predicciones individuales por partido
+                    for nombre, df_p in dict_participantes.items():
+                        pred = df_p[(df_p['Casa'] == partido['Casa']) & (df_p['Fuera'] == partido['Fuera'])]
+                        if not pred.empty:
+                            p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], partido['Gol Casa'], partido['Gol Fuera'])
+                            st.write(f"- **{nombre}**: {pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']} ({p} pts)")
+                            puntos_dia_data.append({'Participante': nombre, 'Puntos': p})
+                    st.divider()
+
+                # 3. Gráfico y tabla de puntos del día
+                df_puntos_dia = pd.DataFrame(puntos_dia_data).groupby('Participante')['Puntos'].sum().reset_index()
+                
+                st.subheader("📈 Rendimiento del día")
                 import plotly.express as px
-                fig = px.bar(df_tabla_hist, x='Participante', y='Puntos', 
-                             title=f"Rendimiento acumulado al {fecha_sel.strftime('%d/%m/%Y')}",
-                             color='Puntos', color_continuous_scale='Greens')
+                fig = px.bar(df_puntos_dia, x='Participante', y='Puntos', 
+                             title=f"Puntos obtenidos solo el {fecha_sel.strftime('%d/%m/%Y')}",
+                             color='Puntos', color_continuous_scale='Blues')
                 st.plotly_chart(fig, use_container_width=True)
+                
+                st.table(df_puntos_dia.sort_values(by='Puntos', ascending=False))
             else:
-                st.info("No se jugaron partidos en esta fecha.")
-        else:
-            st.warning("Columna 'Fecha' no encontrada.")
+                st.info("No hay partidos jugados en esta fecha.")
 
 except Exception as e:
     st.error(f"Error al cargar datos: {e}")
