@@ -163,7 +163,7 @@ try:
                              color='Puntos', color_continuous_scale='Blues')
                 st.plotly_chart(fig, use_container_width=True)
                 
-                st.table(df_puntos_dia.sort_values(by='Puntos', ascending=False))
+                st.table(df_puntos_dia.sort_values(by='Puntos', ascending=False).reset_index(drop=True))
             else:
                 st.info("No hay partidos jugados en esta fecha.")
 
