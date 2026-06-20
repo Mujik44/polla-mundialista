@@ -115,7 +115,9 @@ try:
     with col2:
         st.metric("🏆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
     with col3:
-        st.metric("Partidos Jugados", len(resultados_reales))
+        # Contamos solo los partidos que tienen gol casa Y gol fuera definidos
+        partidos_jugados = len(resultados_reales)
+        st.metric("Partidos Finalizados", partidos_jugados)
 
     st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
     
