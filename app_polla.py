@@ -6,17 +6,13 @@ import gspread
 st.set_page_config(page_title="Polla Mundialista 2026", layout="wide")
 st.title("🏆 Polla Mundialista 2026 - Dashboard en Vivo")
 
-# Función para calcular puntos según tus reglas
 def calcular_puntos(pred_gc, pred_gf, real_gc, real_gf):
-    # Convertimos a string y quitamos espacios antes de verificar si están vacíos
     pred_gc, pred_gf = str(pred_gc).strip(), str(pred_gf).strip()
     real_gc, real_gf = str(real_gc).strip(), str(real_gf).strip()
     
-    # Si alguna celda está vacía, no calculamos puntos (partido pendiente o dato faltante)
     if not pred_gc or not pred_gf or not real_gc or not real_gf:
         return 0
     
-    # Intentamos convertir a entero solo si tenemos valores válidos
     try:
         p_gc, p_gf = int(pred_gc), int(pred_gf)
         r_gc, r_gf = int(real_gc), int(real_gf)
@@ -27,27 +23,18 @@ def calcular_puntos(pred_gc, pred_gf, real_gc, real_gf):
         pred_res = 1 if p_gc > p_gf else (-1 if p_gc < p_gf else 0)
         return 1 if real_res == pred_res else 0
     except ValueError:
-        # Si hay algo que no es un número (como una letra), devolvemos 0
         return 0
 
-# Cargar datos desde Google Sheets
 @st.cache_data(ttl=600)
 def cargar_datos():
     credentials = st.secrets["gcp_service_account"]
     gc = gspread.service_account_from_dict(credentials)
     sh = gc.open("POLLA MUNDIAL 2026")
     
-    # Definimos las columnas que esperamos para evitar el error de encabezados duplicados
-    columnas_esperadas = ['Casa', 'Gol Casa', 'Gol Fuera', 'Fuera', 'Fecha']
-    
-    # Cargar Hoja GENERAL
     ws_gen = sh.worksheet("GENERAL")
-    # Usamos 'get_all_records' pero asegurándonos de limpiar el DataFrame inmediatamente
     df_gen = pd.DataFrame(ws_gen.get_all_records())
-    # Filtramos columnas vacías por si acaso
     df_gen = df_gen.loc[:, ~df_gen.columns.str.contains('^Unnamed')]
 
-    # Cargar Hojas de Participantes
     participantes = ['ANGEL', 'RAI', 'JEFRY', 'JOSE MIGUEL', 'DIEGO', 'PITUS']
     dict_participantes = {}
     
@@ -64,14 +51,12 @@ def cargar_datos():
 try:
     df_general, dict_participantes = cargar_datos()
     
-    # Procesar resultados reales
     resultados_reales = {}
     for _, row in df_general.iterrows():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
         if pd.notna(row['Gol Casa']) and pd.notna(row['Gol Fuera']):
             resultados_reales[(casa, fuera)] = (row['Gol Casa'], row['Gol Fuera'])
 
-    # Calcular puntos
     puntos_totales = []
     for nombre, df_p in dict_participantes.items():
         pts = 0
@@ -82,28 +67,20 @@ try:
                 pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf)
         puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
 
-    # Crear tabla de posiciones
     df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
     df_tabla.index += 1
     
-    # 1. VISTA PRINCIPAL
     st.subheader("📊 Tabla de Posiciones Actual")
     st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
-    # 2. HISTORIAL OPCIONAL
     with st.expander("📅 ¿Quieres ver cómo estaba la tabla en una fecha anterior?"):
         if 'Fecha' in df_general.columns:
             df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True)
             fechas_disponibles = sorted([f for f in df_general['Fecha'].unique() if f >= pd.Timestamp('2026-06-11')])
             
             if fechas_disponibles:
-                fecha_sel = st.select_slider(
-                    "Selecciona la fecha del histórico:", 
-                    options=fechas_disponibles,
-                    format_func=lambda x: x.strftime('%d/%m/%Y')
-                )
-
+                fecha_sel = st.select_slider("Selecciona la fecha del histórico:", options=fechas_disponibles, format_func=lambda x: x.strftime('%d/%m/%Y'))
                 df_hist = df_general[df_general['Fecha'] <= fecha_sel]
                 hist_data = []
                 for nombre, df_p in dict_participantes.items():
@@ -123,7 +100,6 @@ try:
         else:
             st.warning("La columna 'Fecha' no está configurada en la hoja GENERAL.")
 
-    # 3. DETALLE POR PARTIDO
     st.divider()
     st.subheader("🔍 Detalle por Partido")
     lista_partidos = [f"{row['Casa']} vs {row['Fuera']}" for _, row in df_general.iterrows()]
@@ -135,42 +111,12 @@ try:
         st.write(f"**Resultado Real:** {match['Gol Casa']} - {match['Gol Fuera']}")
         
         detalle = []
-        for nombre, df_p in dict_participantes.items
+        for nombre, df_p in dict_participantes.items():
+            pred = df_p[(df_p['Casa'] == c) & (df_p['Fuera'] == f)]
+            if not pred.empty:
+                p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], match['Gol Casa'], match['Gol Fuera'])
+                detalle.append({'Participante': nombre, 'Predicción': f"{pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']}", 'Puntos': p})
+        st.table(pd.DataFrame(detalle))
 
-# --- FILTRO DE BÚSQUEDA ---
-st.subheader("🔍 Detalle por Partido")
-
-# Creamos una lista de partidos basada en los partidos de la hoja GENERAL
-lista_partidos = [f"{row['Casa']} vs {row['Fuera']}" for _, row in df_general.iterrows()]
-partido_seleccionado = st.selectbox("Selecciona un partido para ver el detalle:", lista_partidos)
-
-if partido_seleccionado:
-    casa_sel, fuera_sel = partido_seleccionado.split(" vs ")
-    
-    # 1. Obtener resultado real (si existe)
-    match_real = df_general[(df_general['Casa'] == casa_sel) & (df_general['Fuera'] == fuera_sel)].iloc[0]
-    res_real = (match_real['Gol Casa'], match_real['Gol Fuera'])
-    
-    st.write(f"**Resultado Real:** {res_real[0]} - {res_real[1]}")
-    
-    # 2. Comparar predicciones de todos los participantes
-    detalle_data = []
-    for nombre, df_p in dict_participantes.items():
-        pred = df_p[(df_p['Casa'] == casa_sel) & (df_p['Fuera'] == fuera_sel)]
-        if not pred.empty:
-            p_gc, p_gf = pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera']
-            
-            # Calcular puntos si el partido ya se jugó
-            puntos = 0
-            if pd.notna(res_real[0]) and pd.notna(res_real[1]):
-                puntos = calcular_puntos(p_gc, p_gf, res_real[0], res_real[1])
-            
-            detalle_data.append({
-                'Participante': nombre,
-                'Predicción': f"{p_gc} - {p_gf}",
-                'Puntos Ganados': puntos
-            })
-    
-    # 3. Mostrar tabla de detalle
-    df_detalle = pd.DataFrame(detalle_data)
-    st.table(df_detalle)
+except Exception as e:
+    st.error(f"Error al cargar datos: {e}")
