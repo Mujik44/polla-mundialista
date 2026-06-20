@@ -124,8 +124,21 @@ try:
     # --- DASHBOARD DE JORNADA HISTÓRICA ---
     with st.expander("📅 Ver estado de la Polla en una fecha específica"):
         if 'Fecha' in df_general.columns:
-            # Seleccionar fecha
-            fecha_sel = st.date_input("Selecciona el día de la jornada:", value=df_general['Fecha'].max())
+            # 1. Aseguramos que la columna sea tipo datetime y quitamos los nulos
+            df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], errors='coerce')
+            df_general = df_general.dropna(subset=['Fecha'])
+            
+            # 2. Definimos una fecha segura por defecto
+            if not df_general.empty:
+                fecha_max = df_general['Fecha'].max().date() # .date() es clave aquí
+            else:
+                fecha_max = pd.Timestamp('2026-06-11').date()
+            
+            # 3. Calendario con valor seguro
+            fecha_sel = st.date_input(
+                "Selecciona el día de la jornada:",
+                value=fecha_max
+            )
             fecha_sel = pd.Timestamp(fecha_sel)
 
             # 1. Tabla acumulada al final de ese día
