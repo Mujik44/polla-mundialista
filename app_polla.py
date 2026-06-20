@@ -36,7 +36,7 @@ def calcular_puntos(pred_gc, pred_gf, real_gc, real_gf):
 
 def calcular_tabla_hasta_fecha(fecha_corte, df_general, dict_participantes):
     hist_data = []
-    df_corte = df_general[df_general['Fecha'].dt.date <= fecha_corte]
+    df_corte = df_general[df_general['Fecha'].dt.date <= pd.Timestamp(fecha_corte).date()]
     for nombre, df_p in dict_participantes.items():
         pts = 0
         for _, row in df_p.iterrows():
