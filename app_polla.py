@@ -181,7 +181,28 @@ try:
             if not pred.empty:
                 p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], match['Gol Casa'], match['Gol Fuera'])
                 detalle.append({'Participante': nombre, 'Predicción': f"{pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']}", 'Puntos': p})
-        st.table(pd.DataFrame(detalle))
+        
+        # --- NUEVO: GRÁFICO COMPARATIVO ---
+        if not detalle:
+            st.write("No hay predicciones para este partido.")
+        else:
+            df_detalle = pd.DataFrame(detalle)
+            import plotly.express as px
+            
+            fig = px.bar(
+                df_detalle, 
+                x='Participante', 
+                y='Puntos', 
+                color='Puntos',
+                text='Predicción',
+                title=f"Comparativa: {c} vs {f}",
+                color_continuous_scale='RdYlGn'
+            )
+            fig.update_traces(textposition='outside')
+            fig.update_layout(yaxis=dict(title='Puntos obtenidos'))
+            
+            st.plotly_chart(fig, use_container_width=True)
+            st.table(df_detalle)
 
 except Exception as e:
     st.error(f"Error al cargar datos: {e}")
