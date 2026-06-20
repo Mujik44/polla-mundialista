@@ -121,88 +121,50 @@ try:
     st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
-    # --- HISTORIAL OPCIONAL (Calendario Moderno) ---
-    with st.expander("📅 ¿Quieres ver cómo estaba la tabla en una fecha anterior?"):
+    # --- DASHBOARD DE JORNADA HISTÓRICA ---
+    with st.expander("📅 Ver estado de la Polla en una fecha específica"):
         if 'Fecha' in df_general.columns:
-            # Convertir a formato fecha
-            df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True)
-            
-            # Filtramos fechas válidas a partir del 11 de junio
-            min_fecha = pd.Timestamp('2026-06-11')
-            max_fecha = df_general['Fecha'].max()
-            
-            # Calendario de selección simple
-            fecha_sel = st.date_input(
-                "Selecciona la fecha:",
-                value=max_fecha,
-                min_value=min_fecha,
-                max_value=max_fecha
-            )
-
-            # Convertimos fecha_sel a timestamp para comparar con los datos
+            # Seleccionar fecha
+            fecha_sel = st.date_input("Selecciona el día de la jornada:", value=df_general['Fecha'].max())
             fecha_sel = pd.Timestamp(fecha_sel)
 
-            # Recalcular tabla histórica
+            # 1. Tabla acumulada al final de ese día
             df_hist = df_general[df_general['Fecha'] <= fecha_sel]
             
-            # Verificamos si hay partidos en esa fecha
-            if not df_hist.empty:
-                hist_data = []
-                for nombre, df_p in dict_participantes.items():
-                    pts = 0
-                    for _, row in df_p.iterrows():
-                        casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-                        partido = df_hist[(df_hist['Casa'] == casa) & (df_hist['Fuera'] == fuera)]
-                        if not partido.empty and pd.notna(partido.iloc[0]['Gol Casa']):
-                            pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], partido.iloc[0]['Gol Casa'], partido.iloc[0]['Gol Fuera'])
-                    hist_data.append({'Participante': nombre, 'Puntos': pts})
+            # Cálculo de tabla acumulada
+            hist_data = []
+            for nombre, df_p in dict_participantes.items():
+                pts = 0
+                for _, row in df_p.iterrows():
+                    casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+                    partido = df_hist[(df_hist['Casa'] == casa) & (df_hist['Fuera'] == fuera)]
+                    if not partido.empty and pd.notna(partido.iloc[0]['Gol Casa']):
+                        pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], partido.iloc[0]['Gol Casa'], partido.iloc[0]['Gol Fuera'])
+                hist_data.append({'Participante': nombre, 'Puntos': pts})
+            
+            df_tabla_hist = pd.DataFrame(hist_data).sort_values(by='Puntos', ascending=False).reset_index(drop=True)
+            
+            st.subheader(f"📊 Tabla al {fecha_sel.strftime('%d/%m/%Y')}")
+            st.table(df_tabla_hist)
+
+            # 2. Resultados de los partidos de ese día exacto
+            st.subheader(f"⚽ Partidos jugados el {fecha_sel.strftime('%d/%m/%Y')}")
+            partidos_dia = df_general[df_general['Fecha'] == fecha_sel]
+            
+            if not partidos_dia.empty:
+                for _, p in partidos_dia.iterrows():
+                    st.write(f"**{p['Casa']} vs {p['Fuera']}**: {p['Gol Casa']} - {p['Gol Fuera']}")
                 
-                df_tabla_hist = pd.DataFrame(hist_data).sort_values(by='Puntos', ascending=False).reset_index(drop=True)
-                df_tabla_hist.index += 1
-                st.table(df_tabla_hist)
+                # 3. Gráfico comparativo de Puntos Totales (Plotly)
+                import plotly.express as px
+                fig = px.bar(df_tabla_hist, x='Participante', y='Puntos', 
+                             title=f"Rendimiento acumulado al {fecha_sel.strftime('%d/%m/%Y')}",
+                             color='Puntos', color_continuous_scale='Greens')
+                st.plotly_chart(fig, use_container_width=True)
             else:
-                st.write("No hay partidos registrados hasta esa fecha.")
+                st.info("No se jugaron partidos en esta fecha.")
         else:
-            st.warning("La columna 'Fecha' no está configurada en la hoja GENERAL.")
-
-    st.divider()
-    st.subheader("🔍 Detalle por Partido")
-    lista_partidos = [f"{row['Casa']} vs {row['Fuera']}" for _, row in df_general.iterrows()]
-    partido_sel = st.selectbox("Selecciona un partido para ver el detalle:", lista_partidos)
-
-    if partido_sel:
-        c, f = partido_sel.split(" vs ")
-        match = df_general[(df_general['Casa'] == c) & (df_general['Fuera'] == f)].iloc[0]
-        st.write(f"**Resultado Real:** {match['Gol Casa']} - {match['Gol Fuera']}")
-        
-        detalle = []
-        for nombre, df_p in dict_participantes.items():
-            pred = df_p[(df_p['Casa'] == c) & (df_p['Fuera'] == f)]
-            if not pred.empty:
-                p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], match['Gol Casa'], match['Gol Fuera'])
-                detalle.append({'Participante': nombre, 'Predicción': f"{pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']}", 'Puntos': p})
-        
-        # --- NUEVO: GRÁFICO COMPARATIVO ---
-        if not detalle:
-            st.write("No hay predicciones para este partido.")
-        else:
-            df_detalle = pd.DataFrame(detalle)
-            import plotly.express as px
-            
-            fig = px.bar(
-                df_detalle, 
-                x='Participante', 
-                y='Puntos', 
-                color='Puntos',
-                text='Predicción',
-                title=f"Comparativa: {c} vs {f}",
-                color_continuous_scale='RdYlGn'
-            )
-            fig.update_traces(textposition='outside')
-            fig.update_layout(yaxis=dict(title='Puntos obtenidos'))
-            
-            st.plotly_chart(fig, use_container_width=True)
-            st.table(df_detalle)
+            st.warning("Columna 'Fecha' no encontrada.")
 
 except Exception as e:
     st.error(f"Error al cargar datos: {e}")
