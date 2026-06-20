@@ -132,6 +132,11 @@ try:
             fecha_sel = st.date_input("Selecciona el día:", value=min(max(pd.Timestamp.now().date(), inicio_rango), fin_rango), 
                                       min_value=inicio_rango, max_value=fin_rango)
             
+            # --- TABLA ACUMULADA HASTA ESA FECHA ---
+            st.subheader(f"🏆 Tabla Acumulada al {fecha_sel.strftime('%d/%m/%Y')}")
+            df_acumulada = calcular_tabla_hasta_fecha(fecha_sel) # Asegúrate de tener esta función o lógica
+            st.table(df_acumulada.reset_index(drop=True))
+
             # 2. Filtrar partidos del día
             partidos_dia = df_general[df_general['Fecha'].dt.date == fecha_sel]
             
