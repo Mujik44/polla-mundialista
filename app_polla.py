@@ -86,6 +86,38 @@ try:
 
     df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
     df_tabla.index += 1
+
+    # --- 3. SISTEMA DE PREMIOS Y LOGROS ---
+    st.subheader("🏆 Estadísticas Destacadas")
+
+    # Calcular "El Oráculo": contador de aciertos exactos (2 puntos)
+    oraculos = {}
+    for nombre, df_p in dict_participantes.items():
+        aciertos_exactos = 0
+        for _, row in df_p.iterrows():
+            casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+            if (casa, fuera) in resultados_reales:
+                r_gc, r_gf = resultados_reales[(casa, fuera)]
+                # Si calcular_puntos devuelve 2, es un acierto exacto
+                if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
+                    aciertos_exactos += 1
+        oraculos[nombre] = aciertos_exactos
+
+    # Identificar al mejor
+    mejor_oraculo = max(oraculos, key=oraculos.get)
+    cantidad_aciertos = oraculos[mejor_oraculo]
+
+    # Mostrar métricas
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
+    with col2:
+        st.metric("🏆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
+    with col3:
+        st.metric("Partidos Jugados", len(resultados_reales))
+
+    st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
     
     st.subheader("📊 Tabla de Posiciones Actual")
     st.table(df_tabla)
