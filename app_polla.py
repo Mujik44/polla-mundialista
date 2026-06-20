@@ -82,14 +82,16 @@ try:
                 pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf)
         puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
 
-    # Mostrar tabla principal
-    st.subheader("📊 Tabla de Posiciones Actual")
+    # Crear tabla de posiciones
+    df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
     df_tabla.index += 1
-    st.table(df_tabla)
     
+    # 1. VISTA PRINCIPAL
+    st.subheader("📊 Tabla de Posiciones Actual")
+    st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
-    # --- HISTORIAL OPCIONAL (Colapsado por defecto) ---
+    # 2. HISTORIAL OPCIONAL
     with st.expander("📅 ¿Quieres ver cómo estaba la tabla en una fecha anterior?"):
         if 'Fecha' in df_general.columns:
             df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True)
@@ -121,7 +123,7 @@ try:
         else:
             st.warning("La columna 'Fecha' no está configurada en la hoja GENERAL.")
 
-    # --- DETALLE POR PARTIDO ---
+    # 3. DETALLE POR PARTIDO
     st.divider()
     st.subheader("🔍 Detalle por Partido")
     lista_partidos = [f"{row['Casa']} vs {row['Fuera']}" for _, row in df_general.iterrows()]
@@ -133,16 +135,7 @@ try:
         st.write(f"**Resultado Real:** {match['Gol Casa']} - {match['Gol Fuera']}")
         
         detalle = []
-        for nombre, df_p in dict_participantes.items():
-            pred = df_p[(df_p['Casa'] == c) & (df_p['Fuera'] == f)]
-            if not pred.empty:
-                p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], match['Gol Casa'], match['Gol Fuera'])
-                detalle.append({'Participante': nombre, 'Predicción': f"{pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']}", 'Puntos': p})
-        st.table(pd.DataFrame(detalle))
-
-except Exception as e:
-    st.error(f"Error al cargar datos: {e}")
-    st.write("Asegúrate de que el nombre del archivo en Google Drive sea exactamente 'POLLA MUNDIAL 2026' y que las hojas tengan los encabezados correctos.")
+        for nombre, df_p in dict_participantes.items
 
 # --- FILTRO DE BÚSQUEDA ---
 st.subheader("🔍 Detalle por Partido")
