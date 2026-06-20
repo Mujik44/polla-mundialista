@@ -92,7 +92,7 @@ try:
         st.subheader(f"🏆 Tabla Acumulada al {fecha_sel.strftime('%d/%m/%Y')}")
         st.table(calcular_tabla_hasta_fecha(pd.Timestamp(fecha_sel), df_general, dict_participantes).reset_index(drop=True))
 
-        partidos_dia = df_general[df_general['Fecha'].dt.date == fecha_sel]
+        partidos_dia = df_general[df_general['Fecha'].dt.date == pd.Timestamp(fecha_sel).date()]
         if not partidos_dia.empty:
             st.subheader(f"⚽ Resultados y Predicciones: {fecha_sel.strftime('%d/%m/%Y')}")
             puntos_dia_data = []
