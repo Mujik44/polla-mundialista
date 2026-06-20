@@ -146,8 +146,8 @@ try:
     # Tabla General Actual
     tabla_actual = calcular_tabla_hasta_fecha(pd.Timestamp.now(), df_general, dict_participantes)
     
-    st.subheader("📊 Tabla de Posiciones Actual")
-    st.table(tabla_actual.reset_index(drop=True))
+    #st.subheader("📊 Tabla de Posiciones Actual")
+    #st.table(tabla_actual.reset_index(drop=True))
 
     # --- DASHBOARD DE JORNADA ---
     with st.expander("📅 Ver resumen de una jornada específica"):
