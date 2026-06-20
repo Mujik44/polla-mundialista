@@ -86,6 +86,8 @@ with st.sidebar:
 
 try:
 
+    df_general, dict_participantes = cargar_datos()
+
     # --- SISTEMA DE PREMIOS Y LOGROS ---
     st.subheader("🏆 Estadísticas Destacadas")
 
@@ -120,7 +122,6 @@ try:
     st.table(df_tabla)
     st.success("La tabla se actualiza automáticamente desde Google Sheets.")
 
-    df_general, dict_participantes = cargar_datos()
     df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True, errors='coerce')
     
     # Tabla General Actual
