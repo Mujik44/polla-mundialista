@@ -67,12 +67,59 @@ def cargar_datos():
 st.set_page_config(page_title="Polla Mundialista 2026", layout="wide")
 st.title("🏆 Polla Mundialista 2026 - Dashboard en Vivo")
 
+# --- MENÚ LATERAL: REGLAS Y MÁS ---
 with st.sidebar:
     st.header("ℹ️ Información")
     with st.expander("📜 Reglas de Puntuación"):
-        st.write("* **Resultado Exacto**: 2 pts | **Ganador**: 1 pt | **Error**: 0 pts.")
+        st.write("""
+        Para asegurar una competencia justa, estas son las reglas:
+        
+        * **Resultado Exacto**: 2 puntos.
+        * **Acertar Ganador (1X2)**: 1 punto.
+        * **Resultado Errado**: 0 puntos.
+        
+        *Nota: Se considera el resultado final (90 min).*
+        """)
+    
+    st.divider()
+    st.write("💡 *Tip: Puedes ver el historial de la tabla desplegando la opción debajo de la tabla principal.*")
 
 try:
+
+    # --- SISTEMA DE PREMIOS Y LOGROS ---
+    st.subheader("🏆 Estadísticas Destacadas")
+
+    # Calcular "El Oráculo": contador de aciertos exactos (2 puntos)
+    oraculos = {}
+    for nombre, df_p in dict_participantes.items():
+        aciertos_exactos = 0
+        for _, row in df_p.iterrows():
+            casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+            if (casa, fuera) in resultados_reales:
+                r_gc, r_gf = resultados_reales[(casa, fuera)]
+                # Si calcular_puntos devuelve 2, es un acierto exacto
+                if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
+                    aciertos_exactos += 1
+        oraculos[nombre] = aciertos_exactos
+
+    # Identificar al mejor
+    mejor_oraculo = max(oraculos, key=oraculos.get)
+    cantidad_aciertos = oraculos[mejor_oraculo]
+
+    # Mostrar métricas
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
+    with col2:
+        st.metric("🏆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
+
+    st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
+    
+    st.subheader("📊 Tabla de Posiciones Actual")
+    st.table(df_tabla)
+    st.success("La tabla se actualiza automáticamente desde Google Sheets.")
+
     df_general, dict_participantes = cargar_datos()
     df_general['Fecha'] = pd.to_datetime(df_general['Fecha'], dayfirst=True, errors='coerce')
     
