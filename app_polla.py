@@ -42,6 +42,22 @@ def calcular_puntos(pred_gc, pred_gf, real_gc, real_gf):
     except ValueError:
         return 0
 
+def calcular_tabla_hasta_fecha(fecha_corte):
+    hist_data = []
+    # Filtramos el general hasta la fecha elegida
+    df_corte = df_general[df_general['Fecha'].dt.date <= fecha_corte]
+    
+    for nombre, df_p in dict_participantes.items():
+        pts = 0
+        for _, row in df_p.iterrows():
+            casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+            partido = df_corte[(df_corte['Casa'] == casa) & (df_corte['Fuera'] == fuera)]
+            if not partido.empty and pd.notna(partido.iloc[0]['Gol Casa']):
+                pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], partido.iloc[0]['Gol Casa'], partido.iloc[0]['Gol Fuera'])
+        hist_data.append({'NOMBRE': nombre, 'PUNTOS': pts})
+    
+    return pd.DataFrame(hist_data).sort_values(by='PUNTOS', ascending=False)
+
 @st.cache_data(ttl=600)
 def cargar_datos():
     credentials = st.secrets["gcp_service_account"]
