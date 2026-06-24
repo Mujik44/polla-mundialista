@@ -127,13 +127,24 @@ try:
     mejor_oraculo = max(oraculos, key=oraculos.get)
     cantidad_aciertos = oraculos[mejor_oraculo]
 
+    #Identificar al peor
+    peor_oraculo = min(oraculos, key=oraculos.get)
+    cantidad_aciertos2 = oraculos[peor_oraculo]
+
     # Mostrar métricas
     col1, col2 = st.columns(2)
 
     with col1:
         st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
     with col2:
-        st.metric("🏆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
+        st.metric("🍆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
+    with col3:
+        st.metric("🤏🐛 La Posha mas chica (chipi)", peor_oraculo, f"{cantidad_aciertos2} aciertos exactos", delta_color="inverse")
+    with col4:
+    # Botón con ventana flotante (popover)
+    with st.popover("📊 Tabla Aciertos"):
+        st.write("### Ranking de Aciertos Exactos")
+        st.table(df_exactos)
 
     st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
     
