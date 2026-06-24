@@ -111,40 +111,37 @@ try:
     st.subheader("🏆 Estadísticas Destacadas")
 
     # Calcular "El Oráculo": contador de aciertos exactos (2 puntos)
-    oraculos = {}
+    data_aciertos = []
     for nombre, df_p in dict_participantes.items():
-        aciertos_exactos = 0
+        exactos = 0
         for _, row in df_p.iterrows():
             casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
             if (casa, fuera) in resultados_reales:
                 r_gc, r_gf = resultados_reales[(casa, fuera)]
-                # Si calcular_puntos devuelve 2, es un acierto exacto
                 if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
-                    aciertos_exactos += 1
-        oraculos[nombre] = aciertos_exactos
+                    exactos += 1
+        data_aciertos.append({'Participante': nombre, 'Aciertos': exactos})
 
-    # Identificar al mejor
-    mejor_oraculo = max(oraculos, key=oraculos.get)
-    cantidad_aciertos = oraculos[mejor_oraculo]
+    df_exactos = pd.DataFrame(data_aciertos).sort_values(by='Aciertos', ascending=False).reset_index(drop=True)
+    peor_oraculo = df_exactos.iloc[-1] # El último de la lista ordenada
 
-    #Identificar al peor
-    peor_oraculo = min(oraculos, key=oraculos.get)
-    cantidad_aciertos2 = oraculos[peor_oraculo]
-
-    # Mostrar métricas
-    col1, col2 = st.columns(2)
+    # --- FILA DE 4 COLUMNAS ---
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
+
     with col2:
-        st.metric("🍆 La Posha mas grande", mejor_oraculo, f"{cantidad_aciertos} aciertos exactos")
+        st.metric("🍆 La Posha mas grande", df_exactos.iloc[0]['Participante'], f"{df_exactos.iloc[0]['Aciertos']} exactos")
+
     with col3:
-        st.metric("🤏🐛 La Posha mas chica (chipi)", peor_oraculo, f"{cantidad_aciertos2} aciertos exactos", delta_color="inverse")
+        st.metric("🤏🐛 La Posha mas chica (chipi)", peor_oraculo['Participante'], f"{peor_oraculo['Aciertos']} exactos", delta_color="inverse")
+
     with col4:
-    # Botón con ventana flotante (popover)
-    with st.popover("📊 Tabla Aciertos"):
-        st.write("### Ranking de Aciertos Exactos")
-        st.table(df_exactos)
+        # Botón con ventana flotante (popover)
+        with st.popover("📊 Tabla Aciertos"):
+            st.write("### Ranking de Aciertos Exactos")
+            st.table(df_exactos)
 
     st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
     
