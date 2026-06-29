@@ -26,24 +26,26 @@ def obtener_bandera(pais):
 # --- FUNCIONES ACTUALIZADAS V2 ---
 def calcular_puntos(pred_gc, pred_gf, pred_cl, real_gc, real_gf, real_cl):
     pts = 0
-    # 1. Marcador y Ganador
     try:
         p_gc, p_gf = int(str(pred_gc)), int(str(pred_gf))
         r_gc, r_gf = int(str(real_gc)), int(str(real_gf))
         
+        # 1. Puntaje por Marcador y Ganador
         if (p_gc == r_gc) and (p_gf == r_gf):
-            pts += 3  # Exacto
+            pts += 3  # Marcador Exacto
+            pts += 2  # También es ganador
         else:
             real_res = 1 if r_gc > r_gf else (-1 if r_gc < r_gf else 0)
             pred_res = 1 if p_gc > p_gf else (-1 if p_gc < p_gf else 0)
             if real_res == pred_res:
-                pts += 2  # Ganador
-    except: pass
-    
-    # 2. Clasifica
-    if str(pred_cl).strip().upper() == str(real_cl).strip().upper():
-        pts += 1
+                pts += 2  # Solo ganador
         
+        # 2. Puntaje por Clasifica
+        if str(pred_cl).strip().upper() == str(real_cl).strip().upper():
+            pts += 1
+            
+    except: 
+        pass
     return pts
 
 def calcular_tabla_hasta_fecha(fecha_corte, df_general, dict_participantes):
