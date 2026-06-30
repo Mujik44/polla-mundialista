@@ -137,7 +137,7 @@ peor_oraculo = df_exactos.iloc[-1] # El último de la lista ordenada
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{t.iloc[0]['PUNTOS']} pts")
+    st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
 
 with col2:
     st.metric("🍆 La Posha mas grande", df_exactos.iloc[0]['Participante'], f"{df_exactos.iloc[0]['Aciertos']} exactos")
