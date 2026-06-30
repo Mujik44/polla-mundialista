@@ -126,7 +126,7 @@ for nombre, df_p in dict_participantes.items():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
         if (casa, fuera) in resultados_reales:
             r_gc, r_gf = resultados_reales[(casa, fuera)]
-            if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], r_gc, r_gf, None) == 2:
+            if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], r_gc, r_gf, None) >= 5:
                 exactos += 1
     data_aciertos.append({'Participante': nombre, 'Aciertos': exactos})
 
@@ -137,7 +137,7 @@ peor_oraculo = df_exactos.iloc[-1] # El último de la lista ordenada
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
+    st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{t.iloc[0]['PUNTOS']} pts")
 
 with col2:
     st.metric("🍆 La Posha mas grande", df_exactos.iloc[0]['Participante'], f"{df_exactos.iloc[0]['Aciertos']} exactos")
