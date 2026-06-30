@@ -76,6 +76,24 @@ def obtener_tabla(df_general, dict_participantes, fecha_corte=None):
 st.set_page_config(page_title="Polla Mundialista 2026", layout="wide")
 st.title("🏆 Polla Mundialista 2026")
 
+# --- MENÚ LATERAL: REGLAS Y MÁS ---
+with st.sidebar:
+    st.header("ℹ️ Información")
+    with st.expander("📜 Reglas de Puntuación"):
+        st.write("""
+        Para asegurar una competencia justa, estas son las reglas:
+        
+        * **Resultado Exacto**: 3 puntos.
+        * **Acertar Ganador (1X2)**: 2 puntos.
+        * **Acertar Clasificado**: 1 punto.
+        * **Resultado Errado**: 0 puntos.
+        
+        *Nota: Se considera el resultado final (90 min).*
+        """)
+    
+    st.divider()
+    st.write("💡 *Tip: Puedes ver el historial de la tabla desplegando la opción debajo de la tabla principal.*")
+
 df_general, dict_participantes = cargar_datos()
 
 # 1. TABLA PRINCIPAL
