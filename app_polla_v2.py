@@ -97,23 +97,23 @@ with st.sidebar:
 df_general, dict_participantes = cargar_datos()
 
 resultados_reales = {}
-    for _, row in df_general.iterrows():
+for _, row in df_general.iterrows():
+    casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+    if pd.notna(row['Gol Casa']) and pd.notna(row['Gol Fuera']):
+        resultados_reales[(casa, fuera)] = (row['Gol Casa'], row['Gol Fuera'])
+
+puntos_totales = []
+for nombre, df_p in dict_participantes.items():
+    pts = 0
+    for _, row in df_p.iterrows():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-        if pd.notna(row['Gol Casa']) and pd.notna(row['Gol Fuera']):
-            resultados_reales[(casa, fuera)] = (row['Gol Casa'], row['Gol Fuera'])
+        if (casa, fuera) in resultados_reales:
+            r_gc, r_gf = resultados_reales[(casa, fuera)]
+            pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf)
+    puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
 
-    puntos_totales = []
-    for nombre, df_p in dict_participantes.items():
-        pts = 0
-        for _, row in df_p.iterrows():
-            casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-            if (casa, fuera) in resultados_reales:
-                r_gc, r_gf = resultados_reales[(casa, fuera)]
-                pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf)
-        puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
-
-    df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
-    df_tabla.index += 1
+df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
+df_tabla.index += 1
 
 # --- SISTEMA DE PREMIOS Y LOGROS ---
 st.subheader("🏆 Estadísticas Destacadas")
