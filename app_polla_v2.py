@@ -5,6 +5,41 @@ from datetime import datetime
 import pytz
 import plotly.express as px 
 
+# --- DISEÑO MUNDIALISTA 2026 ---
+st.markdown("""
+    <style>
+    /* Tipografía y fondos */
+    .main {
+        background-color: #F8F9FA;
+    }
+    
+    /* Personalización de métricas */
+    [data-testid="stMetricValue"] {
+        color: #011E41;
+        font-family: 'Arial', sans-serif;
+    }
+    
+    /* Barra lateral */
+    [data-testid="stSidebar"] {
+        background-color: #011E41;
+        color: white;
+    }
+    
+    /* Botones y botones de acción */
+    div.stButton > button:first-child {
+        background-color: #FFD700;
+        color: #011E41;
+        font-weight: bold;
+    }
+    
+    /* Títulos */
+    h1, h2, h3 {
+        color: #011E41;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- CONFIGURACIÓN ---
 PERU_TZ = pytz.timezone('America/Lima')
 
