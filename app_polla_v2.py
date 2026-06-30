@@ -94,6 +94,8 @@ with st.sidebar:
     st.divider()
     st.write("💡 *Tip: Puedes ver el historial de la tabla desplegando la opción debajo de la tabla principal.*")
 
+df_general, dict_participantes = cargar_datos()
+
 # --- SISTEMA DE PREMIOS Y LOGROS ---
     st.subheader("🏆 Estadísticas Destacadas")
 
@@ -131,8 +133,6 @@ with st.sidebar:
             st.table(df_exactos)
 
     st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
-
-df_general, dict_participantes = cargar_datos()
 
 # 1. TABLA PRINCIPAL
 st.subheader("📊 Tabla de Posiciones General")
