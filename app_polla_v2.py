@@ -109,7 +109,7 @@ for nombre, df_p in dict_participantes.items():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
         if (casa, fuera) in resultados_reales:
             r_gc, r_gf = resultados_reales[(casa, fuera)]
-            pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf)
+            pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], r_gc, r_gf, None)
     puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
 
 df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
