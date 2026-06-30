@@ -97,42 +97,42 @@ with st.sidebar:
 df_general, dict_participantes = cargar_datos()
 
 # --- SISTEMA DE PREMIOS Y LOGROS ---
-    st.subheader("🏆 Estadísticas Destacadas")
+st.subheader("🏆 Estadísticas Destacadas")
 
-    # Calcular "El Oráculo": contador de aciertos exactos (2 puntos)
-    data_aciertos = []
-    for nombre, df_p in dict_participantes.items():
-        exactos = 0
-        for _, row in df_p.iterrows():
-            casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-            if (casa, fuera) in resultados_reales:
-                r_gc, r_gf = resultados_reales[(casa, fuera)]
-                if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
-                    exactos += 1
-        data_aciertos.append({'Participante': nombre, 'Aciertos': exactos})
+# Calcular "El Oráculo": contador de aciertos exactos (2 puntos)
+data_aciertos = []
+for nombre, df_p in dict_participantes.items():
+    exactos = 0
+    for _, row in df_p.iterrows():
+        casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
+        if (casa, fuera) in resultados_reales:
+            r_gc, r_gf = resultados_reales[(casa, fuera)]
+            if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
+                exactos += 1
+    data_aciertos.append({'Participante': nombre, 'Aciertos': exactos})
 
-    df_exactos = pd.DataFrame(data_aciertos).sort_values(by='Aciertos', ascending=False).reset_index(drop=True)
-    peor_oraculo = df_exactos.iloc[-1] # El último de la lista ordenada
+df_exactos = pd.DataFrame(data_aciertos).sort_values(by='Aciertos', ascending=False).reset_index(drop=True)
+peor_oraculo = df_exactos.iloc[-1] # El último de la lista ordenada
 
-    # --- FILA DE 4 COLUMNAS ---
-    col1, col2, col3, col4 = st.columns(4)
+# --- FILA DE 4 COLUMNAS ---
+col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
-        st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
+with col1:
+    st.metric("Líder General", df_tabla.iloc[0]['NOMBRE'], f"{df_tabla.iloc[0]['PUNTOS']} pts")
 
-    with col2:
-        st.metric("🍆 La Posha mas grande", df_exactos.iloc[0]['Participante'], f"{df_exactos.iloc[0]['Aciertos']} exactos")
+with col2:
+    st.metric("🍆 La Posha mas grande", df_exactos.iloc[0]['Participante'], f"{df_exactos.iloc[0]['Aciertos']} exactos")
 
-    with col3:
-        st.metric("🤏🐛 La Posha mas chica (chipi)", peor_oraculo['Participante'], f"{peor_oraculo['Aciertos']} exactos", delta_color="inverse")
+with col3:
+    st.metric("🤏🐛 La Posha mas chica (chipi)", peor_oraculo['Participante'], f"{peor_oraculo['Aciertos']} exactos", delta_color="inverse")
 
-    with col4:
-        # Botón con ventana flotante (popover)
-        with st.popover("📊 Tabla Aciertos"):
-            st.write("### Ranking de Aciertos Exactos")
-            st.table(df_exactos)
+with col4:
+    # Botón con ventana flotante (popover)
+    with st.popover("📊 Tabla Aciertos"):
+        st.write("### Ranking de Aciertos Exactos")
+        st.table(df_exactos)
 
-    st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
+st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
 
 # 1. TABLA PRINCIPAL
 st.subheader("📊 Tabla de Posiciones General")
