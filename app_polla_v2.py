@@ -8,35 +8,38 @@ import plotly.express as px
 # --- DISEÑO MUNDIALISTA 2026 ---
 st.markdown("""
     <style>
-    /* Tipografía y fondos */
-    .main {
-        background-color: #F8F9FA;
+    /* Definición de variables para modo Light y Dark */
+    :root {
+        --color-vibrante-1: #FF4500; /* Naranja rojizo */
+        --color-vibrante-2: #32CD32; /* Verde Lima */
+        --color-vibrante-3: #1E90FF; /* Azul brillante */
+        --fondo-light: #FFFFFF;
+        --texto-light: #000000;
+        --fondo-dark: #011E41; /* Azul profundo del logo */
+        --texto-dark: #FFFFFF;
+    }
+
+    /* Modo Light */
+    @media (prefers-color-scheme: light) {
+        .main, .stApp { background-color: var(--fondo-light); color: var(--texto-light); }
+        h1, h2, h3 { color: var(--color-vibrante-1); font-family: 'Arial Black', sans-serif; }
+    }
+
+    /* Modo Dark */
+    @media (prefers-color-scheme: dark) {
+        .main, .stApp { background-color: var(--fondo-dark); color: var(--texto-dark); }
+        h1, h2, h3 { color: #FFD700; font-family: 'Arial Black', sans-serif; } /* Dorado trofeo */
+    }
+
+    /* Elemento de estilo "Curvas 2026" para contenedores */
+    .stMetric {
+        border-left: 5px solid var(--color-vibrante-3);
+        padding-left: 10px;
+        background: rgba(255, 255, 255, 0.05);
     }
     
-    /* Personalización de métricas */
-    [data-testid="stMetricValue"] {
-        color: #011E41;
-        font-family: 'Arial', sans-serif;
-    }
-    
-    /* Barra lateral */
-    [data-testid="stSidebar"] {
-        background-color: #011E41;
-        color: white;
-    }
-    
-    /* Botones y botones de acción */
-    div.stButton > button:first-child {
-        background-color: #FFD700;
-        color: #011E41;
-        font-weight: bold;
-    }
-    
-    /* Títulos */
-    h1, h2, h3 {
-        color: #011E41;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
+    /* Fuente tipográfica estilo FIFA 2026 */
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -245,12 +248,32 @@ if not partidos.empty:
             df_pred = pd.DataFrame(predicciones_partido)
             st.table(df_pred)
     
-    # Gráfico de puntos diarios
-    if puntos_dia_lista:
-        df_dia = pd.DataFrame(puntos_dia_lista).groupby('Participante')['Puntos'].sum().reset_index()
-        st.subheader("📈 Rendimiento del día")
-        fig = px.bar(df_dia, x='Participante', y='Puntos', color='Puntos', text='Puntos', color_continuous_scale='Bluered')
-        st.plotly_chart(fig, use_container_width=True)
+    # --- GRÁFICO DE PUNTOS DIARIOS (ESTILO MUNDIALISTA) ---
+if puntos_dia_lista:
+    df_dia = pd.DataFrame(puntos_dia_lista).groupby('Participante')['Puntos'].sum().reset_index()
+    st.subheader("📈 Rendimiento del día")
+    
+    # Paleta de colores extraída del logo (Naranja, Verde, Azul, Dorado)
+    color_scale = ['#FF4500', '#32CD32', '#1E90FF', '#FFD700']
+    
+    fig = px.bar(
+        df_dia, 
+        x='Participante', 
+        y='Puntos', 
+        color='Participante', # Color por participante para mejor contraste
+        text='Puntos', 
+        color_discrete_sequence=color_scale
+    )
+    
+    # Ajuste de estilo para modo oscuro/claro
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color="#FFFFFF" if st.session_state.get('theme', 'dark') == 'dark' else "#000000",
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
         
 else:
     st.info("No hay partidos programados para esta fecha.")
