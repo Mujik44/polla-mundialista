@@ -107,9 +107,21 @@ for nombre, df_p in dict_participantes.items():
     pts = 0
     for _, row in df_p.iterrows():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
-        if (casa, fuera) in resultados_reales:
-            r_gc, r_gf = resultados_reales[(casa, fuera)]
-            pts += calcular_puntos(row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], r_gc, r_gf, None)
+        
+        # Buscamos el partido en el df_general para obtener los resultados REALES
+        partido = df_general[(df_general['Casa'] == casa) & (df_general['Fuera'] == fuera)]
+        
+        if not partido.empty and pd.notna(partido.iloc[0]['Gol Casa']):
+            r_gc = partido.iloc[0]['Gol Casa']
+            r_gf = partido.iloc[0]['Gol Fuera']
+            r_cl = partido.iloc[0]['Clasifica'] # Obtenemos el clasificado REAL
+            
+            # Pasamos todos los argumentos, incluyendo la predicción y el real de clasificación
+            pts += calcular_puntos(
+                row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], 
+                r_gc, r_gf, r_cl
+            )
+            
     puntos_totales.append({'NOMBRE': nombre, 'PUNTOS': pts})
 
 df_tabla = pd.DataFrame(puntos_totales).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
