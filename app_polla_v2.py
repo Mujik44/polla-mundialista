@@ -174,7 +174,7 @@ st.markdown("---")
 # 2. HISTÓRICO
 st.subheader("📅 Historial y Jornadas")
 fecha_actual = datetime.now(PERU_TZ).date()
-fecha_sel = st.date_input("Seleccionar fecha:", value=fecha_actual, min_value=datetime(2026, 6, 28).date(), max_value=fecha_actual)
+fecha_sel = st.date_input("Seleccionar fecha:", value=fecha_actual, min_value=datetime(2026, 6, 28).date(), max_value=datetime(2026, 7, 19).date())
 
 st.table(obtener_tabla(df_general, dict_participantes, pd.Timestamp(fecha_sel)))
 
