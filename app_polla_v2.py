@@ -126,7 +126,7 @@ for nombre, df_p in dict_participantes.items():
         casa, fuera = str(row['Casa']).strip(), str(row['Fuera']).strip()
         if (casa, fuera) in resultados_reales:
             r_gc, r_gf = resultados_reales[(casa, fuera)]
-            if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], r_gc, r_gf) == 2:
+            if calcular_puntos(row['Gol Casa'], row['Gol Fuera'], row['Clasifica'], r_gc, r_gf, None) == 2:
                 exactos += 1
     data_aciertos.append({'Participante': nombre, 'Aciertos': exactos})
 
