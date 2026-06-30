@@ -98,20 +98,37 @@ puntos_dia_lista = [] # <--- AÑADIDO: Inicialización necesaria
 
 if not partidos.empty:
     for _, partido in partidos.iterrows():
-        st.write(f"**{obtener_bandera(partido['Casa'])} {partido['Casa']} vs {partido['Fuera']} {obtener_bandera(partido['Fuera'])}** | Final: {partido['Gol Casa']}-{partido['Gol Fuera']} | Clasifica: {partido['Clasifica']}")
+        # Encabezado del partido
+        st.write(f"---")
+        st.write(f"### {obtener_bandera(partido['Casa'])} {partido['Casa']} vs {partido['Fuera']} {obtener_bandera(partido['Fuera'])}")
+        st.write(f"**Resultado Real:** {partido['Gol Casa']}-{partido['Gol Fuera']} | **Clasifica:** {partido['Clasifica']}")
+        
+        # Tabla para mostrar predicciones de todos los participantes
+        predicciones_partido = []
         for nombre, df_p in dict_participantes.items():
             pred = df_p[(df_p['Casa'] == partido['Casa']) & (df_p['Fuera'] == partido['Fuera'])]
             if not pred.empty:
                 p = calcular_puntos(pred.iloc[0]['Gol Casa'], pred.iloc[0]['Gol Fuera'], pred.iloc[0]['Clasifica'], 
                                     partido['Gol Casa'], partido['Gol Fuera'], partido['Clasifica'])
+                predicciones_partido.append({
+                    "Participante": nombre,
+                    "Predicción": f"{pred.iloc[0]['Gol Casa']}-{pred.iloc[0]['Gol Fuera']}",
+                    "Clasifica": pred.iloc[0]['Clasifica'],
+                    "Puntos": p
+                })
                 puntos_dia_lista.append({'Participante': nombre, 'Puntos': p})
-        st.divider()
+        
+        # Mostrar predicciones en tabla
+        if predicciones_partido:
+            df_pred = pd.DataFrame(predicciones_partido)
+            st.table(df_pred)
     
     # Gráfico de puntos diarios
     if puntos_dia_lista:
         df_dia = pd.DataFrame(puntos_dia_lista).groupby('Participante')['Puntos'].sum().reset_index()
         st.subheader("📈 Rendimiento del día")
-        st.plotly_chart(px.bar(df_dia, x='Participante', y='Puntos', color='Puntos', text='Puntos', color_continuous_scale='Bluered'))
+        fig = px.bar(df_dia, x='Participante', y='Puntos', color='Puntos', text='Puntos', color_continuous_scale='Bluered')
+        st.plotly_chart(fig, use_container_width=True)
         
 else:
     st.info("No hay partidos programados para esta fecha.")
