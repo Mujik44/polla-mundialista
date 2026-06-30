@@ -5,44 +5,6 @@ from datetime import datetime
 import pytz
 import plotly.express as px 
 
-# --- DISEÑO MUNDIALISTA 2026 ---
-st.markdown("""
-    <style>
-    /* Definición de variables para modo Light y Dark */
-    :root {
-        --color-vibrante-1: #FF4500; /* Naranja rojizo */
-        --color-vibrante-2: #32CD32; /* Verde Lima */
-        --color-vibrante-3: #1E90FF; /* Azul brillante */
-        --fondo-light: #FFFFFF;
-        --texto-light: #000000;
-        --fondo-dark: #011E41; /* Azul profundo del logo */
-        --texto-dark: #FFFFFF;
-    }
-
-    /* Modo Light */
-    @media (prefers-color-scheme: light) {
-        .main, .stApp { background-color: var(--fondo-light); color: var(--texto-light); }
-        h1, h2, h3 { color: var(--color-vibrante-1); font-family: 'Arial Black', sans-serif; }
-    }
-
-    /* Modo Dark */
-    @media (prefers-color-scheme: dark) {
-        .main, .stApp { background-color: var(--fondo-dark); color: var(--texto-dark); }
-        h1, h2, h3 { color: #FFD700; font-family: 'Arial Black', sans-serif; } /* Dorado trofeo */
-    }
-
-    /* Elemento de estilo "Curvas 2026" para contenedores */
-    .stMetric {
-        border-left: 5px solid var(--color-vibrante-3);
-        padding-left: 10px;
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    /* Fuente tipográfica estilo FIFA 2026 */
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-    </style>
-    """, unsafe_allow_html=True)
-
 # --- CONFIGURACIÓN ---
 PERU_TZ = pytz.timezone('America/Lima')
 
