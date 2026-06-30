@@ -163,7 +163,7 @@ with col4:
         st.write("### Ranking de Aciertos Exactos")
         st.table(df_exactos)
 
-st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos (2 pts) acertados hasta el momento.")
+st.info("💡 **Logro 'La Posha mas grande'**: Es para el enfermo con la mayor cantidad de resultados exactos acertados hasta el momento.")
 
 # 1. TABLA PRINCIPAL
 st.subheader("📊 Tabla de Posiciones General")
