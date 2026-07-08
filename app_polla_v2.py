@@ -72,52 +72,51 @@ def obtener_tabla(df_general, dict_participantes, fecha_corte=None):
         data.append({'NOMBRE': nombre, 'PUNTOS': pts})
     return pd.DataFrame(data).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
 
-def mostrar_bracket_estilo_tv(df_fase):
-    # CSS para lograr el estilo de transmisión de televisión
+def mostrar_bracket_completo(df_general):
+    # CSS optimizado para mostrar varias columnas (Fases)
     st.markdown("""
     <style>
-    .bracket-grid {
+    .bracket-wrapper {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        grid-template-columns: repeat(4, 1fr); /* 4 columnas para 16avos, 8vos, 4tos, Final */
+        gap: 15px;
         background-color: #050505;
-        padding: 30px;
-        border-radius: 15px;
-        border: 2px solid #222;
-        margin-top: 20px;
+        padding: 20px;
+        border-radius: 10px;
     }
-    .match-card {
+    .fase-col { display: flex; flex-direction: column; gap: 10px; }
+    .match-box-tv {
         background: #1a1a1a;
-        border-left: 5px solid #FFD700;
-        padding: 12px;
+        border-left: 4px solid #FFD700;
+        padding: 8px;
         color: white;
-        font-family: 'Helvetica Neue', sans-serif;
-        margin-bottom: 10px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        font-size: 0.75rem;
+        border-radius: 3px;
     }
-    .pendiente { 
-        background: #252525; 
-        color: #777; 
-        border-left: 5px solid #444;
-    }
+    .pendiente-tv { background: #252525; color: #666; border-left: 4px solid #333; }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="bracket-grid">', unsafe_allow_html=True)
+    st.markdown('<div class="bracket-wrapper">', unsafe_allow_html=True)
     
-    # Dividimos en dos columnas visuales (izq/der)
-    for _, row in df_fase.iterrows():
-        # Verificamos si es partido jugado o pendiente
-        es_pendiente = pd.isna(row['Gol Casa'])
-        clase = "match-card pendiente" if es_pendiente else "match-card"
-        res_txt = f"{row['Gol Casa']} - {row['Gol Fuera']}" if not es_pendiente else "? - ?"
+    fases = ["16avos", "8vos", "4tos", "Final"]
+    
+    for fase in fases:
+        st.markdown(f'<div class="fase-col"><h5>{fase}</h5>', unsafe_allow_html=True)
+        partidos = df_general[df_general['Fase'] == fase]
         
-        st.markdown(f"""
-            <div class="{clase}">
-                {obtener_bandera(row['Casa'])} {row['Casa']}  |  {obtener_bandera(row['Fuera'])} {row['Fuera']}<br>
-                <b>Resultado: {res_txt}</b>
-            </div>
-        """, unsafe_allow_html=True)
+        for _, row in partidos.iterrows():
+            es_pendiente = pd.isna(row['Gol Casa'])
+            clase = "match-box-tv pendiente-tv" if es_pendiente else "match-box-tv"
+            res = f"{int(row['Gol Casa'])} - {int(row['Gol Fuera'])}" if not es_pendiente else "? - ?"
+            
+            st.markdown(f"""
+                <div class="{clase}">
+                    {row['Casa']} vs {row['Fuera']}<br>
+                    <b>{res}</b>
+                </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -290,16 +289,12 @@ else:
     st.info("No hay partidos programados para esta fecha.")
 
 # --- ENCABEZADO Y COPA CENTRAL ---
-st.markdown("<h2 style='text-align: center; color: white;'>EL CAMINO A LA FINAL</h2>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: white;'>EL CAMINO A LA FINAL</h1>", unsafe_allow_html=True)
 
-col_izq, col_centro, col_der = st.columns([1, 0.5, 1])
+# Centrar imágenes
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    st.image("assets/copa.webp", use_column_width=True)
 
-with col_centro:
-    st.image("assets/copa.webp", width=150) # Asegúrate de tener la imagen
-    st.image("assets/logo_fifa.webp", width=100)
-
-# --- SELECTOR DE FASE ---
-fase_sel = st.selectbox("Selecciona la Fase a visualizar:", ["16avos", "8vos", "4tos", "Final"])
-df_fase = df_general[df_general['Fase'] == fase_sel]
-
-mostrar_bracket_estilo_tv(df_fase)
+# --- MOSTRAR EL BRACKET COMPLETO ---
+mostrar_bracket_completo(df_general)
