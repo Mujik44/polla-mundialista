@@ -295,8 +295,8 @@ st.markdown("<h2 style='text-align: center; color: white;'>EL CAMINO A LA FINAL<
 col_izq, col_centro, col_der = st.columns([1, 0.5, 1])
 
 with col_centro:
-    st.image("assets/copa.png", width=150) # Asegúrate de tener la imagen
-    st.image("assets/logo_fifa.png", width=100)
+    st.image("assets/copa.webp", width=150) # Asegúrate de tener la imagen
+    st.image("assets/logo_fifa.webp", width=100)
 
 # --- SELECTOR DE FASE ---
 fase_sel = st.selectbox("Selecciona la Fase a visualizar:", ["16avos", "8vos", "4tos", "Final"])
