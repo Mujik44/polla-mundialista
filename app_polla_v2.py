@@ -191,14 +191,12 @@ def construir_bracket_html(df_general):
     '''
 
     izq_html = ''.join(columnas_izq)
-    der_html = ''.join(reversed(columnas_der))
+    der_html = ''.join(columnas_der)
 
     css = """
     <style>
         .bracket-fondo {
-            background: linear-gradient(180deg, #0b1f4d 0%, #142d6e 100%);
-            border-radius: 16px;
-            padding: 30px 15px;
+            padding: 20px 15px;
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         .bracket-wrapper {
@@ -233,7 +231,7 @@ def construir_bracket_html(df_general):
             top: 50%;
             width: 18px;
             height: 2px;
-            background: #ffd200;
+            background: #4a5a7a;
         }
         .bracket-lado.derecha .round:not(.ultima) .match::after {
             content: '';
@@ -242,7 +240,7 @@ def construir_bracket_html(df_general):
             top: 50%;
             width: 18px;
             height: 2px;
-            background: #ffd200;
+            background: #4a5a7a;
         }
         .round:not(.ultima) .match:nth-child(odd)::before {
             content: '';
@@ -250,7 +248,7 @@ def construir_bracket_html(df_general):
             top: 50%;
             height: calc(50% + 8px);
             width: 2px;
-            background: #ffd200;
+            background: #4a5a7a;
         }
         .round:not(.ultima) .match:nth-child(even)::before {
             content: '';
@@ -258,7 +256,7 @@ def construir_bracket_html(df_general):
             bottom: 50%;
             height: calc(50% + 8px);
             width: 2px;
-            background: #ffd200;
+            background: #4a5a7a;
         }
         .bracket-lado.izquierda .round:not(.ultima) .match::before { right: -18px; }
         .bracket-lado.derecha .round:not(.ultima) .match::before { left: -18px; }
