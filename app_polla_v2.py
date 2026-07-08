@@ -1,9 +1,11 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import gspread
 from datetime import datetime
 import pytz
-import plotly.express as px 
+import plotly.express as px
+import re
 
 # --- CONFIGURACIÓN ---
 PERU_TZ = pytz.timezone('America/Lima')
@@ -72,53 +74,239 @@ def obtener_tabla(df_general, dict_participantes, fecha_corte=None):
         data.append({'NOMBRE': nombre, 'PUNTOS': pts})
     return pd.DataFrame(data).sort_values(by='PUNTOS', ascending=False).reset_index(drop=True)
 
-def mostrar_bracket_completo(df_general):
-    # CSS optimizado para mostrar varias columnas (Fases)
-    st.markdown("""
-    <style>
-    .bracket-wrapper {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr); /* 4 columnas para 16avos, 8vos, 4tos, Final */
-        gap: 15px;
-        background-color: #050505;
-        padding: 20px;
-        border-radius: 10px;
-    }
-    .fase-col { display: flex; flex-direction: column; gap: 10px; }
-    .match-box-tv {
-        background: #1a1a1a;
-        border-left: 4px solid #FFD700;
-        padding: 8px;
-        color: white;
-        font-size: 0.75rem;
-        border-radius: 3px;
-    }
-    .pendiente-tv { background: #252525; color: #666; border-left: 4px solid #333; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- BRACKET MUNDIALISTA ---
 
-    st.markdown('<div class="bracket-wrapper">', unsafe_allow_html=True)
-    
-    fases = ["16avos", "8vos", "4tos", "Final"]
-    
-    for fase in fases:
-        st.markdown(f'<div class="fase-col"><h5>{fase}</h5>', unsafe_allow_html=True)
-        partidos = df_general[df_general['Fase'] == fase]
-        
-        for _, row in partidos.iterrows():
-            es_pendiente = pd.isna(row['Gol Casa'])
-            clase = "match-box-tv pendiente-tv" if es_pendiente else "match-box-tv"
-            res = f"{int(row['Gol Casa'])} - {int(row['Gol Fuera'])}" if not es_pendiente else "? - ?"
-            
-            st.markdown(f"""
-                <div class="{clase}">
-                    {row['Casa']} vs {row['Fuera']}<br>
-                    <b>{res}</b>
-                </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+def _num_partido(orden):
+    """Extrae el número entero de un texto tipo 'Partido 7' -> 7"""
+    m = re.search(r'\d+', str(orden))
+    return int(m.group()) if m else 0
+
+def _preparar_rondas_sheet(df_general):
+    """Agrupa las filas del sheet por Fase y las ordena por número de Orden.
+    Devuelve un dict {tamaño_ronda: [partidos...]}"""
+    df = df_general.copy()
+    df['NumPartido'] = df['Orden'].apply(_num_partido)
+    rondas = {}
+    for _, grupo in df.groupby('Fase'):
+        grupo_ordenado = grupo.sort_values('NumPartido')
+        rondas[len(grupo_ordenado)] = grupo_ordenado.to_dict('records')
+    return rondas
+
+def _generar_ronda_siguiente(ronda_actual, tam_siguiente):
+    """Si la siguiente ronda todavía no existe en el sheet, la construye
+    a partir de los Clasifica de la ronda anterior (partidos 2k-1 y 2k -> partido k)."""
+    siguiente = []
+    for k in range(tam_siguiente):
+        m1 = ronda_actual[2 * k] if 2 * k < len(ronda_actual) else {}
+        m2 = ronda_actual[2 * k + 1] if 2 * k + 1 < len(ronda_actual) else {}
+        eq1 = str(m1.get('Clasifica', '') or '').strip()
+        eq2 = str(m2.get('Clasifica', '') or '').strip()
+        siguiente.append({
+            'Casa': eq1, 'Fuera': eq2,
+            'Gol Casa': None, 'Gol Fuera': None,
+            'Clasifica': '', 'Fecha': None
+        })
+    return siguiente
+
+def _armar_bracket_completo(df_general):
+    """Combina lo que ya existe en el sheet con lo que hay que inferir,
+    devolviendo un dict {tamaño_ronda: [partidos]} desde 16avos hasta la Final."""
+    rondas_sheet = _preparar_rondas_sheet(df_general)
+    if not rondas_sheet:
+        return {}
+    tamanos = sorted(rondas_sheet.keys(), reverse=True)
+    tam_actual = tamanos[0]
+    bracket = {tam_actual: rondas_sheet[tam_actual]}
+    tam = tam_actual
+    while tam > 1:
+        tam_sig = tam // 2
+        if tam_sig in rondas_sheet:
+            bracket[tam_sig] = rondas_sheet[tam_sig]
+        else:
+            bracket[tam_sig] = _generar_ronda_siguiente(bracket[tam], tam_sig)
+        tam = tam_sig
+    return bracket
+
+def _fila_equipo_html(nombre, gol, gano):
+    nombre = (nombre or '').strip()
+    if not nombre:
+        return '<div class="equipo vacio"><span class="nombre">Por definir</span></div>'
+    bandera = obtener_bandera(nombre)
+    if gol is None or (isinstance(gol, float) and pd.isna(gol)) or str(gol).strip() == '':
+        gol_html = ''
+    else:
+        try:
+            gol_html = f'<span class="gol">{int(float(gol))}</span>'
+        except (ValueError, TypeError):
+            gol_html = ''
+    clase = 'equipo ganador' if gano else 'equipo'
+    return f'<div class="{clase}"><span class="bandera">{bandera}</span><span class="nombre">{nombre}</span>{gol_html}</div>'
+
+def _match_html(match):
+    casa = str(match.get('Casa', '') or '').strip()
+    fuera = str(match.get('Fuera', '') or '').strip()
+    gc = match.get('Gol Casa')
+    gf = match.get('Gol Fuera')
+    clasifica = str(match.get('Clasifica', '') or '').strip().upper()
+    casa_gana = bool(casa) and clasifica == casa.upper()
+    fuera_gana = bool(fuera) and clasifica == fuera.upper()
+    return (
+        '<div class="match">'
+        + _fila_equipo_html(casa, gc, casa_gana)
+        + _fila_equipo_html(fuera, gf, fuera_gana)
+        + '</div>'
+    )
+
+def _ronda_html(matches, es_ultima_del_lado):
+    clase_extra = ' ultima' if es_ultima_del_lado else ''
+    filas = ''.join(_match_html(m) for m in matches)
+    return f'<div class="round{clase_extra}">{filas}</div>'
+
+def construir_bracket_html(df_general):
+    bracket = _armar_bracket_completo(df_general)
+    if not bracket:
+        return "<p style='color:white'>No hay datos de bracket disponibles todavía.</p>"
+
+    tamanos = sorted(bracket.keys(), reverse=True)  # ej: [16, 8, 4, 2, 1]
+    tam_final = tamanos[-1]
+    rondas_previas = tamanos[:-1]  # todo menos la final
+
+    columnas_izq, columnas_der = [], []
+    n_rondas = len(rondas_previas)
+    for idx, tam in enumerate(rondas_previas):
+        matches = bracket[tam]
+        mitad = len(matches) // 2
+        izq = matches[:mitad] if len(matches) > 1 else matches
+        der = matches[mitad:] if len(matches) > 1 else []
+        es_ultima = (idx == n_rondas - 1)
+        columnas_izq.append(_ronda_html(izq, es_ultima))
+        columnas_der.append(_ronda_html(der, es_ultima))
+
+    final_match = bracket[tam_final][0] if bracket[tam_final] else {}
+    html_final = f'''
+    <div class="final-col">
+        <div class="final-label">FINAL</div>
+        {_match_html(final_match)}
+    </div>
+    '''
+
+    izq_html = ''.join(columnas_izq)
+    der_html = ''.join(reversed(columnas_der))
+
+    css = """
+    <style>
+        .bracket-fondo {
+            background: linear-gradient(180deg, #0b1f4d 0%, #142d6e 100%);
+            border-radius: 16px;
+            padding: 30px 15px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .bracket-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        .bracket-lado {
+            display: flex;
+            gap: 24px;
+        }
+        .bracket-lado.derecha { flex-direction: row-reverse; }
+        .round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            min-width: 150px;
+        }
+        .match {
+            background: #ffffff;
+            border-radius: 8px;
+            margin: 8px 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .bracket-lado.izquierda .round:not(.ultima) .match::after {
+            content: '';
+            position: absolute;
+            right: -18px;
+            top: 50%;
+            width: 18px;
+            height: 2px;
+            background: #ffd200;
+        }
+        .bracket-lado.derecha .round:not(.ultima) .match::after {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 50%;
+            width: 18px;
+            height: 2px;
+            background: #ffd200;
+        }
+        .round:not(.ultima) .match:nth-child(odd)::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            height: calc(50% + 8px);
+            width: 2px;
+            background: #ffd200;
+        }
+        .round:not(.ultima) .match:nth-child(even)::before {
+            content: '';
+            position: absolute;
+            bottom: 50%;
+            height: calc(50% + 8px);
+            width: 2px;
+            background: #ffd200;
+        }
+        .bracket-lado.izquierda .round:not(.ultima) .match::before { right: -18px; }
+        .bracket-lado.derecha .round:not(.ultima) .match::before { left: -18px; }
+        .equipo {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0b1f4d;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .equipo:last-child { border-bottom: none; }
+        .equipo.vacio { color: #9aa0ab; font-style: italic; font-weight: 400; }
+        .equipo.ganador { background: #fff3c4; }
+        .bandera { margin-right: 6px; font-size: 15px; }
+        .nombre { flex: 1; white-space: nowrap; }
+        .gol { margin-left: 6px; font-weight: 800; color: #142d6e; }
+        .final-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+        }
+        .final-label {
+            background: #ffd200;
+            color: #0b1f4d;
+            font-weight: 900;
+            padding: 6px 18px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+    </style>
+    """
+
+    html = f"""
+    {css}
+    <div class="bracket-fondo">
+        <div class="bracket-wrapper">
+            <div class="bracket-lado izquierda">{izq_html}</div>
+            {html_final}
+            <div class="bracket-lado derecha">{der_html}</div>
+        </div>
+    </div>
+    """
+    return html
 
 # --- APP ---
 st.set_page_config(page_title="Polla Mundialista 2026", layout="wide")
@@ -288,13 +476,9 @@ if puntos_dia_lista:
 else:
     st.info("No hay partidos programados para esta fecha.")
 
-# --- ENCABEZADO Y COPA CENTRAL ---
-st.markdown("<h1 style='text-align: center; color: white;'>EL CAMINO A LA FINAL</h1>", unsafe_allow_html=True)
+st.markdown("---")
 
-# Centrar imágenes
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    st.image("assets/copa.webp", use_column_width=True)
-
-# --- MOSTRAR EL BRACKET COMPLETO ---
-mostrar_bracket_completo(df_general)
+# 4. BRACKET MUNDIALISTA
+st.subheader("🏆 Bracket Mundial")
+html_bracket = construir_bracket_html(df_general)
+components.html(html_bracket, height=950, scrolling=True)
