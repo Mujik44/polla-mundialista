@@ -195,50 +195,64 @@ def construir_bracket_html(df_general):
 
     css = """
     <style>
+        :root {
+            --conn-w: clamp(4px, 1.1vw, 16px);
+            --match-gap-v: clamp(1px, 0.5vw, 8px);
+            --match-gap-h: clamp(0px, 0.2vw, 5px);
+            --round-gap: clamp(2px, 1vw, 22px);
+            --side-gap: clamp(1px, 0.5vw, 8px);
+        }
         .bracket-fondo {
-            padding: 20px 15px;
+            padding: clamp(4px, 1.5vw, 20px) clamp(2px, 1vw, 15px);
             font-family: 'Segoe UI', Arial, sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         .bracket-wrapper {
             display: flex;
             justify-content: center;
             align-items: stretch;
-            gap: 10px;
-            overflow-x: auto;
+            gap: var(--side-gap);
+            width: 100%;
         }
         .bracket-lado {
             display: flex;
-            gap: 24px;
+            gap: var(--round-gap);
+            flex: 1 1 0;
+            min-width: 0;
         }
         .bracket-lado.derecha { flex-direction: row-reverse; }
         .round {
             display: flex;
             flex-direction: column;
             justify-content: space-around;
-            min-width: 150px;
+            flex: 1 1 0;
+            min-width: 0;
         }
         .match {
             background: #ffffff;
-            border-radius: 8px;
-            margin: 8px 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border-radius: clamp(3px, 0.6vw, 8px);
+            margin: var(--match-gap-v) var(--match-gap-h);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
             position: relative;
+            min-width: 0;
         }
         .bracket-lado.izquierda .round:not(.ultima) .match::after {
             content: '';
             position: absolute;
-            right: -18px;
+            right: calc(-1 * var(--conn-w));
             top: 50%;
-            width: 18px;
+            width: var(--conn-w);
             height: 2px;
             background: #4a5a7a;
         }
         .bracket-lado.derecha .round:not(.ultima) .match::after {
             content: '';
             position: absolute;
-            left: -18px;
+            left: calc(-1 * var(--conn-w));
             top: 50%;
-            width: 18px;
+            width: var(--conn-w);
             height: 2px;
             background: #4a5a7a;
         }
@@ -246,7 +260,7 @@ def construir_bracket_html(df_general):
             content: '';
             position: absolute;
             top: 50%;
-            height: calc(50% + 8px);
+            height: calc(50% + var(--match-gap-v) + 2px);
             width: 2px;
             background: #4a5a7a;
         }
@@ -254,42 +268,57 @@ def construir_bracket_html(df_general):
             content: '';
             position: absolute;
             bottom: 50%;
-            height: calc(50% + 8px);
+            height: calc(50% + var(--match-gap-v) + 2px);
             width: 2px;
             background: #4a5a7a;
         }
-        .bracket-lado.izquierda .round:not(.ultima) .match::before { right: -18px; }
-        .bracket-lado.derecha .round:not(.ultima) .match::before { left: -18px; }
+        .bracket-lado.izquierda .round:not(.ultima) .match::before { right: calc(-1 * var(--conn-w)); }
+        .bracket-lado.derecha .round:not(.ultima) .match::before { left: calc(-1 * var(--conn-w)); }
         .equipo {
             display: flex;
             align-items: center;
-            padding: 6px 10px;
-            font-size: 13px;
+            padding: clamp(1px, 0.4vw, 6px) clamp(2px, 0.6vw, 10px);
+            font-size: clamp(7px, 1vw, 13px);
             font-weight: 600;
             color: #0b1f4d;
             border-bottom: 1px solid #e0e0e0;
+            min-width: 0;
         }
         .equipo:last-child { border-bottom: none; }
         .equipo.vacio { color: #9aa0ab; font-style: italic; font-weight: 400; }
         .equipo.ganador { background: #fff3c4; }
-        .bandera { margin-right: 6px; font-size: 15px; }
-        .nombre { flex: 1; white-space: nowrap; }
-        .gol { margin-left: 6px; font-weight: 800; color: #142d6e; }
+        .bandera { margin-right: clamp(1px, 0.3vw, 6px); font-size: clamp(8px, 1.1vw, 15px); flex-shrink: 0; }
+        .nombre {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .gol { margin-left: clamp(1px, 0.3vw, 6px); font-weight: 800; color: #142d6e; flex-shrink: 0; }
         .final-col {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 0 20px;
+            padding: 0 clamp(3px, 1vw, 20px);
+            flex-shrink: 0;
         }
         .final-label {
             background: #ffd200;
             color: #0b1f4d;
             font-weight: 900;
-            padding: 6px 18px;
+            font-size: clamp(8px, 1.2vw, 14px);
+            padding: clamp(2px, 0.5vw, 6px) clamp(4px, 1vw, 18px);
             border-radius: 20px;
-            margin-bottom: 12px;
+            margin-bottom: clamp(3px, 0.8vw, 12px);
             letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        @media (max-width: 600px) {
+            .bandera { display: none; }
+            .equipo { font-size: 7px; padding: 1px 2px; }
+            .final-label { letter-spacing: 0; }
         }
     </style>
     """
@@ -479,4 +508,4 @@ st.markdown("---")
 # 4. BRACKET MUNDIALISTA
 st.subheader("🏆 Bracket Mundial")
 html_bracket = construir_bracket_html(df_general)
-components.html(html_bracket, height=950, scrolling=True)
+components.html(html_bracket, height=950, scrolling=False)
