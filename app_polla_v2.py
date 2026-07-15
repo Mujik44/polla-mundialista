@@ -81,10 +81,17 @@ def _num_partido(orden):
     m = re.search(r'\d+', str(orden))
     return int(m.group()) if m else 0
 
+def _es_tercer_puesto(fase):
+    fase_norm = str(fase or '').strip().lower()
+    return ('3er' in fase_norm) or ('tercer' in fase_norm)
+
 def _preparar_rondas_sheet(df_general):
     """Agrupa las filas del sheet por Fase y las ordena por número de Orden.
-    Devuelve un dict {tamaño_ronda: [partidos...]}"""
+    Devuelve un dict {tamaño_ronda: [partidos...]}. El partido de 3er puesto
+    se excluye acá porque tiene 1 solo partido, igual que la Final, y chocaría
+    con ella al agrupar por tamaño."""
     df = df_general.copy()
+    df = df[~df['Fase'].apply(_es_tercer_puesto)]
     df['NumPartido'] = df['Orden'].apply(_num_partido)
     rondas = {}
     for _, grupo in df.groupby('Fase'):
@@ -127,6 +134,33 @@ def _armar_bracket_completo(df_general):
         tam = tam_sig
     return bracket
 
+def _obtener_partido_tercer_puesto(df_general, bracket):
+    """Si ya existe en el sheet (Fase con '3er' o 'tercer'), usa esos datos.
+    Si todavía no está, lo arma con los perdedores de las 2 semifinales."""
+    df = df_general.copy()
+    filas = df[df['Fase'].apply(_es_tercer_puesto)]
+    if not filas.empty:
+        filas = filas.copy()
+        filas['NumPartido'] = filas['Orden'].apply(_num_partido)
+        return filas.sort_values('NumPartido').iloc[0].to_dict()
+
+    semis = bracket.get(2, [])
+    if len(semis) < 2:
+        return {'Casa': '', 'Fuera': '', 'Gol Casa': None, 'Gol Fuera': None, 'Clasifica': ''}
+
+    def _perdedor(m):
+        casa = str(m.get('Casa', '') or '').strip()
+        fuera = str(m.get('Fuera', '') or '').strip()
+        clasifica = str(m.get('Clasifica', '') or '').strip().upper()
+        if not clasifica or not casa or not fuera:
+            return ''
+        return fuera if clasifica == casa.upper() else casa
+
+    return {
+        'Casa': _perdedor(semis[0]), 'Fuera': _perdedor(semis[1]),
+        'Gol Casa': None, 'Gol Fuera': None, 'Clasifica': ''
+    }
+
 def _fila_equipo_html(nombre, gol, gano):
     nombre = (nombre or '').strip()
     if not nombre:
@@ -157,10 +191,20 @@ def _match_html(match):
         + '</div>'
     )
 
-def _ronda_html(matches, es_ultima_del_lado):
+_NOMBRES_RONDA_FALLBACK = {16: '16avos', 8: '8vos', 4: '4tos', 2: 'Semifinal', 1: 'Final'}
+
+def _nombre_ronda(tam, matches):
+    if matches:
+        fase = str(matches[0].get('Fase', '') or '').strip()
+        if fase:
+            return fase
+    return _NOMBRES_RONDA_FALLBACK.get(tam, f'Ronda de {tam}')
+
+def _ronda_html(matches, es_ultima_del_lado, etiqueta=None):
     clase_extra = ' ultima' if es_ultima_del_lado else ''
+    etiqueta_html = f'<div class="round-label">{etiqueta}</div>' if etiqueta else ''
     filas = ''.join(_match_html(m) for m in matches)
-    return f'<div class="round{clase_extra}">{filas}</div>'
+    return f'<div class="round{clase_extra}">{etiqueta_html}{filas}</div>'
 
 def construir_bracket_html(df_general):
     bracket = _armar_bracket_completo(df_general)
@@ -175,18 +219,22 @@ def construir_bracket_html(df_general):
     n_rondas = len(rondas_previas)
     for idx, tam in enumerate(rondas_previas):
         matches = bracket[tam]
+        etiqueta = _nombre_ronda(tam, matches)
         mitad = len(matches) // 2
         izq = matches[:mitad] if len(matches) > 1 else matches
         der = matches[mitad:] if len(matches) > 1 else []
         es_ultima = (idx == n_rondas - 1)
-        columnas_izq.append(_ronda_html(izq, es_ultima))
-        columnas_der.append(_ronda_html(der, es_ultima))
+        columnas_izq.append(_ronda_html(izq, es_ultima, etiqueta))
+        columnas_der.append(_ronda_html(der, es_ultima, etiqueta))
 
     final_match = bracket[tam_final][0] if bracket[tam_final] else {}
+    tercer_match = _obtener_partido_tercer_puesto(df_general, bracket)
     html_final = f'''
     <div class="final-col">
         <div class="final-label">FINAL</div>
         {_match_html(final_match)}
+        <div class="tercer-label">🥉 3er puesto</div>
+        {_match_html(tercer_match)}
     </div>
     '''
 
@@ -315,10 +363,19 @@ def construir_bracket_html(df_general):
             letter-spacing: 1px;
             white-space: nowrap;
         }
-        @media (max-width: 600px) {
-            .bandera { display: none; }
-            .equipo { font-size: 7px; padding: 1px 2px; }
-            .final-label { letter-spacing: 0; }
+        .tercer-label {
+            color: #cd7f32;
+            font-weight: 800;
+            font-size: clamp(7px, 1vw, 11px);
+            margin: clamp(10px, 2vw, 22px) 0 clamp(2px, 0.6vw, 6px) 0;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .final-col .match:last-of-type {
+            transform: scale(0.85);
+        }
+        .round-label {
+            display: none;
         }
     </style>
     """
@@ -332,6 +389,16 @@ def construir_bracket_html(df_general):
             <div class="bracket-lado derecha">{der_html}</div>
         </div>
     </div>
+    <script>
+        function _ajustarAlturaBracket() {{
+            const alto = document.body.scrollHeight;
+            window.parent.postMessage({{type: "streamlit:setFrameHeight", height: alto}}, "*");
+        }}
+        window.addEventListener('load', _ajustarAlturaBracket);
+        window.addEventListener('resize', _ajustarAlturaBracket);
+        new ResizeObserver(_ajustarAlturaBracket).observe(document.body);
+        setTimeout(_ajustarAlturaBracket, 300);
+    </script>
     """
     return html
 
