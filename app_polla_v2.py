@@ -239,7 +239,7 @@ def construir_bracket_html(df_general):
     '''
 
     izq_html = ''.join(columnas_izq)
-    der_html = ''.join(columnas_der)
+    der_html = ''.join(reversed(columnas_der))
 
     css = """
     <style>
@@ -270,7 +270,7 @@ def construir_bracket_html(df_general):
             flex: 1 1 0;
             min-width: 0;
         }
-        .bracket-lado.derecha { flex-direction: row-reverse; }
+        .bracket-lado.derecha { flex-direction: row; }
         .round {
             display: flex;
             flex-direction: column;
